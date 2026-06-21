@@ -8,8 +8,10 @@ from typing import Sequence
 from grach.pipeline import build_architecture_graph
 from grach.query import affected_entities, find_paths, query_graph
 from grach.schema import ArchitectureGraph
+from grach.viewer import write_viewer
 
 _DEFAULT_GRAPH = Path("grach-out/graph.json")
+_DEFAULT_VIEW = Path("grach-out/graph.html")
 _SKILL = """---
 name: grach
 description: Build and query a corporate architecture graph from Markdown and OpenAPI files.
@@ -21,6 +23,7 @@ description: Build and query a corporate architecture graph from Markdown and Op
 - Run `grach query "<question>"` before searching source documents manually.
 - Use `grach path <source-id> <target-id>` for dependencies.
 - Use `grach affected <entity-id>` for direct reverse impact.
+- Run `grach view` to write a self-contained interactive `grach-out/graph.html`.
 - Treat inferred relationships according to their confidence and provenance.
 """
 
@@ -47,6 +50,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         entity = next((item for item in graph["entities"] if item["id"] == args.entity), None)
         _print_json(entity)
         return 0 if entity else 1
+    if args.command == "view":
+        write_viewer(_read_graph(args.graph), args.out)
+        print(f"Wrote {args.out}")
+        return 0
     if args.command == "codex":
         return _codex(args.action, args.project_dir)
     parser.print_help()
@@ -72,6 +79,9 @@ def _parser() -> argparse.ArgumentParser:
     inspect = subparsers.add_parser("inspect", help="show one entity")
     inspect.add_argument("entity")
     _graph_argument(inspect)
+    view = subparsers.add_parser("view", help="write an offline interactive graph viewer")
+    _graph_argument(view)
+    view.add_argument("--out", type=Path, default=_DEFAULT_VIEW)
     codex = subparsers.add_parser("codex", help="manage the Codex skill")
     codex.add_argument("action", choices=("install", "uninstall"))
     codex.add_argument("--project-dir", type=Path, default=Path.cwd())

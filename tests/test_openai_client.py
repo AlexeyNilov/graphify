@@ -42,6 +42,7 @@ def test_openai_extractor_requests_strict_architecture_json_schema() -> None:
     }
     assert response_format["strict"] is True
     assert response_format["schema"]["additionalProperties"] is False
+    assert "OWNED_BY uses owned entity -> Team" in messages[0]["content"]
 
 
 def test_openai_environment_configures_lm_studio(monkeypatch) -> None:

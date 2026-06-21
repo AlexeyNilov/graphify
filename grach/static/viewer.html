@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grach architecture graph</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #101318; color: #e7ebf0; overflow: hidden; }
+    button, input { font: inherit; }
+    .app { display: grid; grid-template-columns: 280px 1fr 320px; height: 100vh; }
+    .panel { background: #171b22; padding: 18px; overflow-y: auto; border-color: #303642; }
+    .controls { border-right: 1px solid #303642; }
+    .details { border-left: 1px solid #303642; }
+    h1 { font-size: 19px; margin: 0 0 18px; }
+    h2 { color: #9da8b7; font-size: 12px; letter-spacing: .08em; margin: 22px 0 10px; text-transform: uppercase; }
+    input[type="search"] { width: 100%; background: #0f1217; border: 1px solid #3a4250; border-radius: 6px; color: inherit; padding: 9px; }
+    .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    button { background: #252b35; border: 1px solid #3a4250; border-radius: 6px; color: inherit; cursor: pointer; padding: 7px 9px; }
+    button:hover, button.active { background: #31577b; border-color: #4f87b8; }
+    .filter { align-items: center; display: flex; font-size: 13px; gap: 8px; margin: 7px 0; }
+    .filter input { accent-color: #62a7e4; }
+    .range { width: 100%; }
+    .range-label { color: #aeb6c2; display: flex; font-size: 12px; justify-content: space-between; }
+    .canvas { min-width: 0; position: relative; }
+    #cy { height: 100%; width: 100%; }
+    .toolbar { display: flex; gap: 7px; left: 12px; position: absolute; top: 12px; z-index: 2; }
+    .summary { bottom: 10px; color: #9da8b7; font-size: 12px; left: 12px; position: absolute; }
+    .empty { color: #8d98a7; font-size: 14px; line-height: 1.5; }
+    .entity-type { color: #72b7f0; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .entity-name { font-size: 20px; margin: 5px 0; overflow-wrap: anywhere; }
+    .entity-id { color: #8d98a7; font: 12px ui-monospace, monospace; overflow-wrap: anywhere; }
+    .metadata { border-collapse: collapse; font-size: 13px; margin-top: 18px; width: 100%; }
+    .metadata td { border-top: 1px solid #303642; padding: 8px 3px; vertical-align: top; overflow-wrap: anywhere; }
+    .metadata td:first-child { color: #8d98a7; width: 38%; }
+    .relation { border-top: 1px solid #303642; font-size: 12px; padding: 10px 0; }
+    .relation strong { color: #a9d2f5; }
+    .evidence { color: #8d98a7; margin-top: 4px; }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 230px 1fr; }
+      .details { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel controls">
+      <h1>Grach architecture</h1>
+      <input id="search" type="search" placeholder="Search name, ID, or alias" aria-label="Search graph">
+      <h2>View</h2>
+      <div class="presets" id="presets"></div>
+      <h2>Entity types</h2>
+      <div id="entity-filters"></div>
+      <h2>Relationships</h2>
+      <div id="relationship-filters"></div>
+      <h2>Minimum confidence</h2>
+      <input class="range" id="confidence" type="range" min="0" max="1" value="0" step="0.05">
+      <div class="range-label"><span>0</span><span id="confidence-value">0.00</span><span>1</span></div>
+    </aside>
+    <main class="canvas">
+      <div class="toolbar">
+        <button id="fit">Fit</button>
+        <button id="focus">Focus selection</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div id="cy"></div>
+      <div class="summary" id="summary"></div>
+    </main>
+    <aside class="panel details" id="details">
+      <p class="empty">Select an entity to inspect its metadata, relationships, confidence, and provenance.</p>
+    </aside>
+  </div>
+  <script>/*__CYTOSCAPE__*/</script>
+  <script id="graph-data" type="application/json">__GRAPH_JSON__</script>
+  <script>
+    const elements = JSON.parse(document.getElementById('graph-data').textContent);
+    const entityTypes = [...new Set(elements.filter(e => !e.data.source).map(e => e.data.type))].sort();
+    const relationshipTypes = [...new Set(elements.filter(e => e.data.source).map(e => e.data.label))].sort();
+    const presets = {
+      Runtime: ['CALLS', 'USES_DATABASE', 'DEPENDS_ON'],
+      Events: ['PUBLISHES', 'CONSUMES'],
+      Ownership: ['OWNED_BY'],
+      Deployment: ['DEPLOYED_TO'],
+      APIs: ['EXPOSES', 'RECEIVES'],
+      Everything: relationshipTypes
+    };
+    const colors = {
+      Service: '#4f9bc8', Database: '#b07cc6', API: '#48b59b', Endpoint: '#70bd72',
+      Event: '#e0a44d', Team: '#d47772', Document: '#9a8f7a', Infrastructure: '#6f7fc8'
+    };
+    const cy = cytoscape({
+      container: document.getElementById('cy'), elements,
+      style: [
+        { selector: 'node', style: { 'background-color': n => colors[n.data('type')] || '#888',
+          'label': 'data(label)', 'color': '#e7ebf0', 'font-size': 11, 'text-valign': 'bottom',
+          'text-margin-y': 7, 'text-outline-color': '#101318', 'text-outline-width': 2,
+          'width': 34, 'height': 34, 'border-color': '#dce4ec', 'border-width': 1 } },
+        { selector: 'edge', style: { 'curve-style': 'bezier', 'target-arrow-shape': 'triangle',
+          'target-arrow-color': '#74869a', 'line-color': '#74869a', 'width': 1.6,
+          'label': 'data(label)', 'font-size': 8, 'color': '#aeb8c4', 'text-rotation': 'autorotate',
+          'text-background-color': '#101318', 'text-background-opacity': .8, 'text-background-padding': 2,
+          'opacity': e => Math.max(.35, e.data('confidence')) } },
+        { selector: ':selected', style: { 'border-color': '#ffffff', 'border-width': 3 } },
+        { selector: '.dim', style: { 'opacity': .12, 'text-opacity': .12 } },
+        { selector: '.hidden', style: { 'display': 'none' } }
+      ],
+      layout: { name: 'cose', animate: false, fit: true, padding: 45, nodeRepulsion: 9000 }
+    });
+    const state = { preset: 'Runtime', focused: false };
+
+    function checkboxes(containerId, values, kind) {
+      const container = document.getElementById(containerId);
+      values.forEach(value => {
+        const label = document.createElement('label'); label.className = 'filter';
+        const input = document.createElement('input'); input.type = 'checkbox'; input.checked = true;
+        input.dataset.kind = kind; input.value = value; input.addEventListener('change', applyFilters);
+        label.append(input, document.createTextNode(value)); container.append(label);
+      });
+    }
+    checkboxes('entity-filters', entityTypes, 'entity');
+    checkboxes('relationship-filters', relationshipTypes, 'relationship');
+
+    Object.keys(presets).forEach(name => {
+      const button = document.createElement('button'); button.textContent = name;
+      button.addEventListener('click', () => selectPreset(name));
+      button.dataset.preset = name; document.getElementById('presets').append(button);
+    });
+
+    function checked(kind) {
+      return new Set([...document.querySelectorAll(`input[data-kind="${kind}"]:checked`)].map(i => i.value));
+    }
+    function selectPreset(name) {
+      state.preset = name; state.focused = false;
+      const allowed = new Set(presets[name]);
+      document.querySelectorAll('input[data-kind="relationship"]').forEach(i => i.checked = allowed.has(i.value));
+      document.querySelectorAll('[data-preset]').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
+      applyFilters(true);
+    }
+    function applyFilters(runLayout = false) {
+      const allowedEntities = checked('entity'); const allowedRelationships = checked('relationship');
+      const confidence = Number(document.getElementById('confidence').value);
+      document.getElementById('confidence-value').textContent = confidence.toFixed(2);
+      cy.elements().removeClass('hidden dim');
+      cy.edges().forEach(edge => {
+        const visible = allowedRelationships.has(edge.data('label')) && edge.data('confidence') >= confidence
+          && allowedEntities.has(edge.source().data('type')) && allowedEntities.has(edge.target().data('type'));
+        edge.toggleClass('hidden', !visible);
+      });
+      const connected = new Set(); cy.edges(':visible').forEach(e => { connected.add(e.source().id()); connected.add(e.target().id()); });
+      cy.nodes().forEach(node => node.toggleClass('hidden', !allowedEntities.has(node.data('type')) || !connected.has(node.id())));
+      applySearch(); updateSummary();
+      if (runLayout) cy.layout({ name: 'cose', animate: false, fit: true, padding: 45, nodeRepulsion: 9000 }).run();
+    }
+    function applySearch() {
+      const term = document.getElementById('search').value.trim().toLowerCase();
+      cy.elements().removeClass('dim'); if (!term) return;
+      const matches = cy.nodes(':visible').filter(node => [node.id(), node.data('label'), ...(node.data('aliases') || [])]
+        .some(value => String(value).toLowerCase().includes(term)));
+      cy.elements(':visible').addClass('dim'); matches.removeClass('dim'); matches.connectedEdges(':visible').removeClass('dim');
+    }
+    function updateSummary() {
+      document.getElementById('summary').textContent = `${cy.nodes(':visible').length} entities · ${cy.edges(':visible').length} relationships`;
+    }
+    function renderDetails(node) {
+      const data = node.data(); const panel = document.getElementById('details');
+      panel.replaceChildren();
+      const type = el('div', 'entity-type', data.type); const name = el('div', 'entity-name', data.label);
+      const id = el('div', 'entity-id', data.id); panel.append(type, name, id);
+      const table = document.createElement('table'); table.className = 'metadata';
+      Object.entries(data).filter(([key]) => !['id', 'label', 'type'].includes(key)).forEach(([key, value]) => {
+        const row = table.insertRow(); row.insertCell().textContent = key; row.insertCell().textContent = format(value);
+      });
+      panel.append(table, el('h2', '', 'Relationships'));
+      node.connectedEdges(':visible').forEach(edge => {
+        const direction = edge.source().id() === node.id() ? 'outgoing' : 'incoming';
+        const other = direction === 'outgoing' ? edge.target() : edge.source();
+        const item = el('div', 'relation', '');
+        const title = document.createElement('strong'); title.textContent = `${edge.data('label')} · ${direction}`;
+        item.append(title, el('div', '', other.data('label')),
+          el('div', 'evidence', `${Math.round(edge.data('confidence') * 100)}% · ${formatProvenance(edge.data('provenance'))}`));
+        panel.append(item);
+      });
+    }
+    function el(tag, className, text) { const node = document.createElement(tag); node.className = className; node.textContent = text; return node; }
+    function format(value) { return Array.isArray(value) ? value.join(', ') : typeof value === 'object' ? JSON.stringify(value) : String(value); }
+    function formatProvenance(value) { return `${value.source_file}, ${value.source_location}, ${value.method}`; }
+
+    cy.on('tap', 'node', event => renderDetails(event.target));
+    document.getElementById('search').addEventListener('input', applySearch);
+    document.getElementById('confidence').addEventListener('input', applyFilters);
+    document.getElementById('fit').addEventListener('click', () => cy.fit(cy.elements(':visible'), 45));
+    document.getElementById('focus').addEventListener('click', () => {
+      const selected = cy.$('node:selected'); if (!selected.length) return;
+      cy.elements(':visible').addClass('dim'); selected.removeClass('dim'); selected.neighborhood(':visible').removeClass('dim');
+      cy.fit(selected.closedNeighborhood(':visible'), 70); state.focused = true;
+    });
+    document.getElementById('reset').addEventListener('click', () => { document.getElementById('search').value = ''; selectPreset('Runtime'); });
+    selectPreset('Runtime');
+  </script>
+</body>
+</html>

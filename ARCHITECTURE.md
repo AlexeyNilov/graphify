@@ -3,7 +3,7 @@
 Grach has one pipeline:
 
 ```text
-discover -> extract -> normalize -> validate -> merge -> graph.json -> query
+discover -> extract -> validate -> normalize -> merge -> graph.json -> query/view
 ```
 
 ## Responsibilities
@@ -16,6 +16,7 @@ discover -> extract -> normalize -> validate -> merge -> graph.json -> query
 | `normalize.py` | Stable canonical names and typed IDs |
 | `pipeline.py` | Discovery, extraction orchestration, normalization, and merge |
 | `query.py` | Entity search, directed paths, and reverse impact |
+| `viewer.py` | Viewer projection and self-contained offline HTML generation |
 | `cli.py` | CLI and project-local Codex skill installation |
 
 OpenAPI relationships have confidence `1.0`. Markdown relationships receive confidence from the
@@ -25,3 +26,7 @@ provenance.
 
 `graph.json` is a derived local artifact. There is no graph database or vector index in the first
 simplified release.
+
+`graph.html` is also derived. It embeds the graph and the packaged Cytoscape.js runtime so viewing
+architecture data requires neither a server nor an external network request. Filtering and visual
+state remain presentation concerns and do not alter `graph.json`.

@@ -2,7 +2,7 @@
 
 ## First release
 
-The first release is intentionally limited to phases 1-8 of the original proposal.
+The simplified release is intentionally limited to these phases:
 
 1. Use a closed architecture schema.
 2. Read Markdown and OpenAPI 3.x documents from a local directory.
@@ -12,6 +12,8 @@ The first release is intentionally limited to phases 1-8 of the original proposa
 6. Normalize entity names and retain aliases.
 7. Store numeric confidence and provenance on every relationship.
 8. Support entity search, dependency paths, and reverse impact queries over local `graph.json`.
+9. Generate a self-contained local viewer with semantic filters, entity inspection, confidence,
+   and provenance.
 
 The canonical types and relationships are documented in `README.md` and enforced in
 `grach/schema.py`.
@@ -25,6 +27,8 @@ The canonical types and relationships are documented in `README.md` and enforced
 - Terraform and Kubernetes extractors
 - Non-OpenAI providers
 - Non-Codex assistant integrations
+- Saved viewer layouts and graph editing
+- Path and impact highlighting in the viewer
 
 Deferred features should be added only after a concrete use case demonstrates that the local graph
 cannot answer the required architecture questions.

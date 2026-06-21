@@ -30,7 +30,14 @@ grach query "orders database"
 grach path api:orders-api endpoint:create-order
 grach affected database:orders
 grach inspect service:order-service
+grach view
 ```
+
+`grach view` writes `grach-out/graph.html`, a self-contained interactive viewer that works
+offline. Its presets separate runtime dependencies, event flows, ownership, deployment, and API
+surface views. Entity and relationship filters, confidence filtering, search, selection, and the
+details panel expose the graph's metadata and relationship provenance without changing
+`graph.json`.
 
 For a fast, easy-to-read extraction example, run:
 
@@ -68,6 +75,9 @@ Relationship types are `CALLS`, `USES_DATABASE`, `PUBLISHES`, `CONSUMES`, `DEPLO
 Every relationship records numeric confidence and provenance containing its source file,
 source location, and extraction method. IDs are stable, typed slugs such as
 `service:order-service`.
+
+Relationship direction is semantic and validated during extraction. For example, `OWNED_BY` runs
+from the owned entity to its `Team`, while `USES_DATABASE` runs from a `Service` to a `Database`.
 
 ## Development
 

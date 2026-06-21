@@ -51,3 +51,19 @@ def test_build_command_writes_to_grach_output_by_default(
     assert exit_code == 0
     assert (tmp_path / "grach-out/graph.json").is_file()
     assert "grach-out/graph.json" in capsys.readouterr().out
+
+
+def test_view_command_writes_offline_html_from_local_graph(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    graph_path = tmp_path / "graph.json"
+    _graph(graph_path)
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(["view", "--graph", str(graph_path)])
+
+    assert exit_code == 0
+    output = tmp_path / "grach-out/graph.html"
+    assert output.is_file()
+    assert "service:orders" in output.read_text(encoding="utf-8")
+    assert "grach-out/graph.html" in capsys.readouterr().out
