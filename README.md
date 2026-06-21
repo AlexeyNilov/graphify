@@ -1,11 +1,12 @@
-# Graphify
+# Grach
 
-Graphify builds a local corporate architecture knowledge graph from two source types:
+Grach (GRaph ArCHitecture) builds a local corporate architecture knowledge graph from two source
+types:
 
 - OpenAPI 3.x JSON or YAML, parsed deterministically
 - Markdown, interpreted with OpenAI
 
-The result is `graphify-out/graph.json`. Graphify intentionally does not provide general code
+The result is `grach-out/graph.json`. Grach intentionally does not provide general code
 analysis, multiple LLM providers, graph databases, vector search, or non-Codex integrations.
 
 ## Install
@@ -17,24 +18,24 @@ export OPENAI_BASE_URL="http://127.0.0.1:1234/v1"
 export OPENAI_MODEL="google/gemma-4-12b-qat"
 ```
 
-These settings point Graphify at LM Studio's OpenAI-compatible API. Start the local server and
+These settings point Grach at LM Studio's OpenAI-compatible API. Start the local server and
 load the configured model before building a graph. When `OPENAI_BASE_URL` and `OPENAI_MODEL` are
 unset, the OpenAI SDK endpoint and `gpt-4.1-mini` are used.
 
 ## Use
 
 ```bash
-graphify build ./architecture
-graphify query "orders database"
-graphify path api:orders-api endpoint:create-order
-graphify affected database:orders
-graphify inspect service:order-service
+grach build ./architecture
+grach query "orders database"
+grach path api:orders-api endpoint:create-order
+grach affected database:orders
+grach inspect service:order-service
 ```
 
 For a fast, easy-to-read extraction example, run:
 
 ```bash
-graphify build examples/architecture-simple
+grach build examples/architecture-simple
 ```
 
 The [Simple Order System](examples/architecture-simple/order-system.md) contains four entities and
@@ -43,7 +44,7 @@ four explicit relationships.
 For a comprehensive extraction input containing every supported entity and relationship type, run:
 
 ```bash
-graphify build examples/architecture
+grach build examples/architecture
 ```
 
 The fictional [Atlas Commerce Platform](examples/architecture/complex-commerce-platform.md)
@@ -53,7 +54,7 @@ dependencies.
 Install the project-local Codex skill with:
 
 ```bash
-graphify codex install
+grach codex install
 ```
 
 ## Graph schema
@@ -79,3 +80,9 @@ make mypy
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the data flow and [docs/plan.md](docs/plan.md) for the
 scope boundary.
+
+## Migrating from 1.x
+
+Version 2.0 renamed the `graphifyy` distribution, `graphify` Python package and command, default
+`graphify-out` directory, and Codex skill to `grach`. There are no compatibility aliases; reinstall
+the package and replace those names in scripts and imports.

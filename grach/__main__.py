@@ -1,4 +1,4 @@
-from graphify.cli import main
+from grach.cli import main
 
 
 if __name__ == "__main__":

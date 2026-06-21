@@ -3,8 +3,8 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "graphifyy"
-version = "1.1.2"
+name = "grach"
+version = "2.0.0"
 description = "Build a corporate architecture graph from Markdown and OpenAPI"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -23,10 +23,10 @@ dev = [
 ]
 
 [project.scripts]
-graphify = "graphify.cli:main"
+grach = "grach.cli:main"
 
 [tool.setuptools]
-packages = ["graphify"]
+packages = ["grach"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -40,7 +40,7 @@ select = ["E4", "E7", "E9", "F"]
 
 [tool.mypy]
 python_version = "3.10"
-files = ["graphify", "tests"]
+files = ["grach", "tests"]
 check_untyped_defs = true
 no_implicit_optional = true
 warn_unused_ignores = true

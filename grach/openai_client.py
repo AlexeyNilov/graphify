@@ -5,8 +5,8 @@ import os
 from collections.abc import Callable
 from typing import Any, Protocol, cast
 
-from graphify.normalize import canonical_name
-from graphify.schema import ENTITY_TYPES, RELATIONSHIP_TYPES, validate_extraction
+from grach.normalize import canonical_name
+from grach.schema import ENTITY_TYPES, RELATIONSHIP_TYPES, validate_extraction
 
 
 class MarkdownExtractor(Protocol):

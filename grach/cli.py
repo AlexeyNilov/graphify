@@ -5,22 +5,22 @@ import json
 from pathlib import Path
 from typing import Sequence
 
-from graphify.pipeline import build_architecture_graph
-from graphify.query import affected_entities, find_paths, query_graph
-from graphify.schema import ArchitectureGraph
+from grach.pipeline import build_architecture_graph
+from grach.query import affected_entities, find_paths, query_graph
+from grach.schema import ArchitectureGraph
 
-_DEFAULT_GRAPH = Path("graphify-out/graph.json")
+_DEFAULT_GRAPH = Path("grach-out/graph.json")
 _SKILL = """---
-name: graphify
+name: grach
 description: Build and query a corporate architecture graph from Markdown and OpenAPI files.
 ---
 
-# Graphify
+# Grach
 
-- Run `graphify build <path>` to create `graphify-out/graph.json`.
-- Run `graphify query "<question>"` before searching source documents manually.
-- Use `graphify path <source-id> <target-id>` for dependencies.
-- Use `graphify affected <entity-id>` for direct reverse impact.
+- Run `grach build <path>` to create `grach-out/graph.json`.
+- Run `grach query "<question>"` before searching source documents manually.
+- Use `grach path <source-id> <target-id>` for dependencies.
+- Use `grach affected <entity-id>` for direct reverse impact.
 - Treat inferred relationships according to their confidence and provenance.
 """
 
@@ -54,7 +54,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="graphify")
+    parser = argparse.ArgumentParser(prog="grach")
     subparsers = parser.add_subparsers(dest="command")
     build = subparsers.add_parser("build", help="build graph.json from Markdown and OpenAPI")
     build.add_argument("path", type=Path)
@@ -96,7 +96,7 @@ def _print_json(value: object) -> None:
 
 
 def _codex(action: str, project_dir: Path) -> int:
-    skill = project_dir / ".codex" / "skills" / "graphify" / "SKILL.md"
+    skill = project_dir / ".codex" / "skills" / "grach" / "SKILL.md"
     if action == "install":
         skill.parent.mkdir(parents=True, exist_ok=True)
         skill.write_text(_SKILL, encoding="utf-8")

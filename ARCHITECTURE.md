@@ -1,6 +1,6 @@
 # Architecture
 
-Graphify has one pipeline:
+Grach has one pipeline:
 
 ```text
 discover -> extract -> normalize -> validate -> merge -> graph.json -> query

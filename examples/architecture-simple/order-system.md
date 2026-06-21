@@ -1,7 +1,7 @@
 # Simple Order System
 
 This example describes a small system for placing and viewing orders. It is designed for a quick
-Graphify extraction with few entities and unambiguous relationships.
+Grach extraction with few entities and unambiguous relationships.
 
 ## Entities
 

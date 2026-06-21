@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict, deque
-from graphify.schema import ArchitectureGraph, Entity
+from grach.schema import ArchitectureGraph, Entity
 
 _WORD = re.compile(r"[a-z0-9]+")
 

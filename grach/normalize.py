@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from graphify.schema import EntityType
+from grach.schema import EntityType
 
 _CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 _NON_WORD = re.compile(r"[^a-z0-9]+")

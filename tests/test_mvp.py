@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from graphify.pipeline import build_architecture_graph
-from graphify.query import affected_entities, find_paths, query_graph
+from grach.pipeline import build_architecture_graph
+from grach.query import affected_entities, find_paths, query_graph
 
 
 class FakeMarkdownExtractor:
@@ -92,8 +92,8 @@ def test_unsupported_files_are_ignored(tmp_path: Path) -> None:
     (tmp_path / "main.py").write_text("raise RuntimeError", encoding="utf-8")
     (tmp_path / ".codex").mkdir()
     (tmp_path / ".codex" / "instructions.md").write_text("hidden", encoding="utf-8")
-    (tmp_path / "graphify-out").mkdir()
-    (tmp_path / "graphify-out" / "report.md").write_text("generated", encoding="utf-8")
+    (tmp_path / "grach-out").mkdir()
+    (tmp_path / "grach-out" / "report.md").write_text("generated", encoding="utf-8")
 
     graph = build_architecture_graph(tmp_path, markdown_extractor=FakeMarkdownExtractor())
 

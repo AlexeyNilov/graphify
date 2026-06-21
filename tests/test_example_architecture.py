@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from graphify.schema import ENTITY_TYPES, RELATIONSHIP_TYPES
+from grach.schema import ENTITY_TYPES, RELATIONSHIP_TYPES
 
 
 EXAMPLE = Path("examples/architecture/complex-commerce-platform.md")

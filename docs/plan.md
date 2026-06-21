@@ -14,7 +14,7 @@ The first release is intentionally limited to phases 1-8 of the original proposa
 8. Support entity search, dependency paths, and reverse impact queries over local `graph.json`.
 
 The canonical types and relationships are documented in `README.md` and enforced in
-`graphify/schema.py`.
+`grach/schema.py`.
 
 ## Explicitly deferred
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from graphify.cli import main
+from grach.cli import main
 
 
 def _graph(path: Path) -> None:
@@ -33,6 +33,21 @@ def test_codex_install_creates_only_codex_skill(tmp_path: Path) -> None:
     exit_code = main(["codex", "install", "--project-dir", str(tmp_path)])
 
     assert exit_code == 0
-    assert (tmp_path / ".codex/skills/graphify/SKILL.md").is_file()
+    skill = tmp_path / ".codex/skills/grach/SKILL.md"
+    assert skill.is_file()
     assert not (tmp_path / ".claude").exists()
-    assert "graphify build" in (tmp_path / ".codex/skills/graphify/SKILL.md").read_text()
+    assert "grach build" in skill.read_text()
+
+
+def test_build_command_writes_to_grach_output_by_default(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(["build", str(source)])
+
+    assert exit_code == 0
+    assert (tmp_path / "grach-out/graph.json").is_file()
+    assert "grach-out/graph.json" in capsys.readouterr().out

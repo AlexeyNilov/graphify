@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import pytest
 
-from graphify.openai_client import OpenAIMarkdownExtractor
+from grach.openai_client import OpenAIMarkdownExtractor
 
 
 def test_openai_extractor_requests_strict_architecture_json_schema() -> None:

@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from graphify.normalize import canonical_name, entity_id
-from graphify.openapi import extract_openapi, load_openapi
-from graphify.openai_client import MarkdownExtractor, OpenAIMarkdownExtractor
-from graphify.schema import (
+from grach.normalize import canonical_name, entity_id
+from grach.openapi import extract_openapi, load_openapi
+from grach.openai_client import MarkdownExtractor, OpenAIMarkdownExtractor
+from grach.schema import (
     ArchitectureGraph,
     Entity,
     Provenance,
@@ -45,7 +45,7 @@ def _supported_source(path: Path, root: Path, supported: set[str]) -> bool:
     if not path.is_file() or path.suffix.lower() not in supported:
         return False
     relative = path.relative_to(root)
-    return not any(part.startswith(".") or part == "graphify-out" for part in relative.parts[:-1])
+    return not any(part.startswith(".") or part == "grach-out" for part in relative.parts[:-1])
 
 
 def _merge(extractions: list[tuple[dict[str, Any], str, str]]) -> ArchitectureGraph:
