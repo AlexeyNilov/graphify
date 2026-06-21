@@ -1,12 +1,5 @@
 # Atlas Commerce Platform
 
-This document describes a fictional multi-region commerce platform. It is intentionally detailed:
-it is sample input for testing architecture graph extraction, relationship provenance, aliases, and
-multi-hop queries. Names in backticks are canonical names. Earlier documents may use the aliases
-listed below.
-
-## System context
-
 Atlas serves shoppers, merchants, warehouse operators, and finance analysts. Public traffic enters
 through the Global Edge, while internal services communicate through APIs and events. The platform
 uses an active-active application topology, but each order has one home region to serialize writes.
