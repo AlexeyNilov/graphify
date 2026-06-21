@@ -26,12 +26,30 @@ unset, the OpenAI SDK endpoint and `gpt-4.1-mini` are used.
 
 ```bash
 grach build ./architecture
-grach query "orders database"
+grach query "Which service uses the Orders Database?"
+grach query "Who owns Order Service?"
 grach path api:orders-api endpoint:create-order
 grach affected database:orders-database
 grach inspect service:order-service
 grach view
 ```
+
+`grach query` sends the question, but not `graph.json`, to the configured OpenAI-compatible model.
+The model returns a typed query plan; Grach validates that plan and executes it deterministically
+against the local graph. Successful output contains both the plan and the matching entities:
+
+```json
+{
+  "plan": {
+    "operation": "ENTITY_SEARCH",
+    "selector": {"name": "Order Service", "type": "Service"}
+  },
+  "entities": [{"id": "service:order-service", "name": "Order Service", "type": "Service"}]
+}
+```
+
+Relationship questions use typed, directional traversal. Unsupported questions, invalid plans,
+missing anchors, and ambiguous anchors fail explicitly instead of returning a guessed result.
 
 `grach view` writes `grach-out/graph.html`, a self-contained interactive viewer that works
 offline. Its presets separate runtime dependencies, event flows, ownership, deployment, and API
@@ -89,4 +107,3 @@ make mypy
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the data flow .
-

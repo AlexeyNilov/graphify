@@ -1,22 +1,7 @@
 from __future__ import annotations
 
-import re
 from collections import defaultdict, deque
-from grach.schema import ArchitectureGraph, Entity
-
-_WORD = re.compile(r"[a-z0-9]+")
-
-
-def query_graph(graph: ArchitectureGraph, question: str) -> list[Entity]:
-    terms = set(_WORD.findall(question.lower()))
-    matches: list[tuple[int, Entity]] = []
-    for entity in graph["entities"]:
-        text = " ".join([entity["name"], entity["type"], *entity.get("aliases", [])]).lower()
-        words = set(_WORD.findall(text))
-        score = len(terms & words)
-        if terms and terms <= words:
-            matches.append((score, entity))
-    return [entity for _, entity in sorted(matches, key=lambda item: (-item[0], item[1]["id"]))]
+from grach.schema import ArchitectureGraph
 
 
 def find_paths(

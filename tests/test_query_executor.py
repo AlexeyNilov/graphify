@@ -6,6 +6,7 @@ from grach.query_executor import (
     AmbiguousEntityError,
     EntityNotFoundError,
     InvalidQueryPlanError,
+    UnsupportedQueryError,
     execute_query_plan,
     validate_query_plan,
 )
@@ -103,7 +104,7 @@ def _graph() -> ArchitectureGraph:
     ("plan", "message"),
     [
         ({"operation": "UNKNOWN"}, "unsupported query operation"),
-        ({"operation": "ENTITY_SEARCH", "query": ""}, "non-empty query"),
+        ({"operation": "ENTITY_SEARCH", "selector": {}}, "exactly one of id or name"),
         (
             {
                 "operation": "TRAVERSE",
@@ -141,7 +142,11 @@ def _graph() -> ArchitectureGraph:
             "unsupported entity type",
         ),
         (
-            {"operation": "ENTITY_SEARCH", "query": "orders", "extra": True},
+            {
+                "operation": "ENTITY_SEARCH",
+                "selector": {"name": "Orders"},
+                "extra": True,
+            },
             "unexpected fields",
         ),
     ],
@@ -153,12 +158,23 @@ def test_query_plan_validation_rejects_invalid_boundary_data(
         validate_query_plan(plan)
 
 
-def test_entity_search_plan_preserves_existing_search_behavior() -> None:
+def test_entity_search_plan_resolves_a_typed_alias() -> None:
     results = execute_query_plan(
-        _graph(), {"operation": "ENTITY_SEARCH", "query": "orders database"}
+        _graph(),
+        {
+            "operation": "ENTITY_SEARCH",
+            "selector": {"name": "orders-db", "type": "Database"},
+        },
     )
 
     assert [entity["id"] for entity in results] == ["database:orders-database"]
+
+
+def test_unsupported_plan_reports_why_the_question_cannot_be_executed() -> None:
+    plan = {"operation": "UNSUPPORTED", "reason": "The question asks for deployment cost."}
+
+    with pytest.raises(UnsupportedQueryError, match="deployment cost"):
+        execute_query_plan(_graph(), plan)
 
 
 def test_incoming_traversal_returns_entities_that_use_named_database() -> None:

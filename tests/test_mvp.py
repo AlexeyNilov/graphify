@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from grach.pipeline import build_architecture_graph
-from grach.query import affected_entities, find_paths, query_graph
+from grach.query import affected_entities, find_paths
 
 
 class FakeMarkdownExtractor:
@@ -76,12 +76,11 @@ def test_build_combines_openapi_and_markdown_with_stable_provenance(tmp_path: Pa
     assert uses_database["provenance"]["method"] == "openai"
 
 
-def test_queries_cover_search_paths_and_reverse_impact(tmp_path: Path) -> None:
+def test_queries_cover_paths_and_reverse_impact(tmp_path: Path) -> None:
     _write_openapi(tmp_path / "openapi.json")
     (tmp_path / "architecture.md").write_text("Order Service architecture", encoding="utf-8")
     graph = build_architecture_graph(tmp_path, markdown_extractor=FakeMarkdownExtractor())
 
-    assert [item["id"] for item in query_graph(graph, "orders database")] == ["database:orders"]
     assert find_paths(graph, "api:orders-api", "endpoint:create-order") == [
         ["api:orders-api", "endpoint:create-order"]
     ]

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, Literal, TypedDict, cast
 
 from grach.normalize import canonical_name
-from grach.query import query_graph
 from grach.schema import (
     ENTITY_TYPES,
     RELATIONSHIP_TYPES,
@@ -20,18 +19,18 @@ TraversalDirection = Literal["incoming", "outgoing"]
 class EntitySelector(TypedDict, total=False):
     id: str
     name: str
-    type: EntityType
+    type: EntityType | None
 
 
 class TraversalStep(TypedDict, total=False):
     relationship: RelationshipType
     direction: TraversalDirection
-    result_type: EntityType
+    result_type: EntityType | None
 
 
 class EntitySearchPlan(TypedDict):
     operation: Literal["ENTITY_SEARCH"]
-    query: str
+    selector: EntitySelector
 
 
 class TraversePlan(TypedDict):
@@ -40,7 +39,12 @@ class TraversePlan(TypedDict):
     steps: list[TraversalStep]
 
 
-QueryPlan = EntitySearchPlan | TraversePlan
+class UnsupportedPlan(TypedDict):
+    operation: Literal["UNSUPPORTED"]
+    reason: str
+
+
+QueryPlan = EntitySearchPlan | TraversePlan | UnsupportedPlan
 
 
 class QueryPlanError(ValueError):
@@ -52,6 +56,10 @@ class InvalidQueryPlanError(QueryPlanError):
 
 
 class EntityNotFoundError(QueryPlanError):
+    pass
+
+
+class UnsupportedQueryError(QueryPlanError):
     pass
 
 
@@ -69,23 +77,29 @@ def validate_query_plan(data: object) -> QueryPlan:
         raise InvalidQueryPlanError("query plan must be an object")
     operation = data.get("operation")
     if operation == "ENTITY_SEARCH":
-        _require_keys(data, {"operation", "query"}, "entity search plan")
-        query = data.get("query")
-        if not isinstance(query, str) or not query.strip():
-            raise InvalidQueryPlanError("entity search plan requires a non-empty query")
+        _require_keys(data, {"operation", "selector"}, "entity search plan")
+        _validate_selector(data.get("selector"), label="selector")
         return cast(EntitySearchPlan, data)
     if operation == "TRAVERSE":
         _require_keys(data, {"operation", "anchor", "steps"}, "traverse plan")
-        _validate_selector(data.get("anchor"))
+        _validate_selector(data.get("anchor"), label="anchor")
         _validate_steps(data.get("steps"))
         return cast(TraversePlan, data)
+    if operation == "UNSUPPORTED":
+        _require_keys(data, {"operation", "reason"}, "unsupported plan")
+        reason = data.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            raise InvalidQueryPlanError("unsupported plan requires a non-empty reason")
+        return cast(UnsupportedPlan, data)
     raise InvalidQueryPlanError(f"unsupported query operation: {operation!r}")
 
 
 def execute_query_plan(graph: ArchitectureGraph, plan_data: object) -> list[Entity]:
     plan = validate_query_plan(plan_data)
     if plan["operation"] == "ENTITY_SEARCH":
-        return query_graph(graph, plan["query"])
+        return [_resolve_entity(graph["entities"], plan["selector"])]
+    if plan["operation"] == "UNSUPPORTED":
+        raise UnsupportedQueryError(plan["reason"])
     entities_by_id = {entity["id"]: entity for entity in graph["entities"]}
     current_ids = {_resolve_entity(graph["entities"], plan["anchor"])["id"]}
     for step in plan["steps"]:
@@ -93,16 +107,16 @@ def execute_query_plan(graph: ArchitectureGraph, plan_data: object) -> list[Enti
     return [entities_by_id[entity_id] for entity_id in sorted(current_ids)]
 
 
-def _validate_selector(value: object) -> None:
+def _validate_selector(value: object, *, label: str) -> None:
     if not isinstance(value, dict):
-        raise InvalidQueryPlanError("anchor must be an object")
-    _require_keys(value, {"id", "name", "type"}, "anchor", required=set())
+        raise InvalidQueryPlanError(f"{label} must be an object")
+    _require_keys(value, {"id", "name", "type"}, label, required=set())
     identifiers = [key for key in ("id", "name") if key in value]
     if len(identifiers) != 1:
-        raise InvalidQueryPlanError("anchor requires exactly one of id or name")
+        raise InvalidQueryPlanError(f"{label} requires exactly one of id or name")
     identifier = value[identifiers[0]]
     if not isinstance(identifier, str) or not identifier.strip():
-        raise InvalidQueryPlanError(f"anchor {identifiers[0]} must be a non-empty string")
+        raise InvalidQueryPlanError(f"{label} {identifiers[0]} must be a non-empty string")
     entity_type = value.get("type")
     if entity_type is not None and (
         not isinstance(entity_type, str) or entity_type not in ENTITY_TYPES
@@ -175,7 +189,7 @@ def _matches_selector(entity: Entity, selector: EntitySelector) -> bool:
 
 def _describe_selector(selector: EntitySelector) -> str:
     identifier = f"id={selector['id']!r}" if "id" in selector else f"name={selector['name']!r}"
-    if "type" in selector:
+    if selector.get("type") is not None:
         return f"{identifier}, type={selector['type']!r}"
     return identifier
 

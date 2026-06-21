@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Sequence
 
 from grach.pipeline import build_architecture_graph
-from grach.query import affected_entities, find_paths, query_graph
+from grach.query import affected_entities, find_paths
 from grach.schema import ArchitectureGraph
 from grach.viewer import write_viewer
 
@@ -37,8 +38,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Wrote {args.out}")
         return 0
     if args.command == "query":
-        _print_json(query_graph(_read_graph(args.graph), args.question))
-        return 0
+        return _query(args.graph, args.question)
     if args.command == "path":
         _print_json(find_paths(_read_graph(args.graph), args.source, args.target))
         return 0
@@ -66,7 +66,7 @@ def _parser() -> argparse.ArgumentParser:
     build = subparsers.add_parser("build", help="build graph.json from Markdown and OpenAPI")
     build.add_argument("path", type=Path)
     build.add_argument("--out", type=Path, default=_DEFAULT_GRAPH)
-    query = subparsers.add_parser("query", help="search graph entities")
+    query = subparsers.add_parser("query", help="answer a typed natural-language graph question")
     query.add_argument("question")
     _graph_argument(query)
     path = subparsers.add_parser("path", help="find directed paths between entities")
@@ -103,6 +103,20 @@ def _write_graph(graph: ArchitectureGraph, path: Path) -> None:
 
 def _print_json(value: object) -> None:
     print(json.dumps(value, indent=2))
+
+
+def _query(graph_path: Path, question: str) -> int:
+    from grach.query_executor import QueryPlanError, execute_query_plan
+    from grach.query_planner import OpenAIQueryPlanner, QueryPlannerError
+
+    try:
+        plan = OpenAIQueryPlanner().plan(question)
+        entities = execute_query_plan(_read_graph(graph_path), plan)
+    except (QueryPlannerError, QueryPlanError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    _print_json({"plan": plan, "entities": entities})
+    return 0
 
 
 def _codex(action: str, project_dir: Path) -> int:

@@ -5,6 +5,10 @@ runs. With a loopback LM Studio URL they remain on the local machine; with a rem
 the machine. Do not include credentials, secrets, or documents the configured provider is not
 permitted to receive.
 
+Natural-language questions are sent to the same provider when `grach query` runs. The local
+`graph.json` is not included in planning requests. Query text can still contain sensitive system
+names or operational details, so apply the same provider policy used for Markdown inputs.
+
 OpenAPI files are parsed locally. YAML uses `yaml.safe_load`; arbitrary YAML object construction is
 not enabled.
 

@@ -15,7 +15,8 @@ discover -> extract -> validate -> normalize -> merge -> graph.json -> query/vie
 | `openai_client.py` | OpenAI-compatible Markdown extraction, including local LM Studio |
 | `normalize.py` | Stable canonical names and typed IDs |
 | `pipeline.py` | Discovery, extraction orchestration, normalization, and merge |
-| `query.py` | Entity search, directed paths, and reverse impact |
+| `query.py` | Directed paths and reverse impact |
+| `query_planner.py` | Strict OpenAI-compatible natural-language query planning |
 | `query_executor.py` | Runtime query-plan validation, entity resolution, and typed traversal |
 | `viewer.py` | Viewer projection and self-contained offline HTML generation |
 | `cli.py` | CLI and project-local Codex skill installation |
@@ -32,18 +33,19 @@ weakening relationship constraints or silently dropping data.
 `graph.json` is a derived local artifact. There is no graph database or vector index in the first
 simplified release.
 
-Typed query execution is deterministic and local:
+Natural-language querying separates model interpretation from local execution:
 
 ```text
-validated query plan -> resolve one anchor -> apply typed directional steps -> sorted entities
+question -> strict query planner -> plan validation -> anchor resolution
+         -> typed directional traversal -> sorted entities
 ```
 
-`ENTITY_SEARCH` plans preserve the existing entity search behavior. `TRAVERSE` plans use only
-relationships present in `graph.json`; each step names a relationship type, direction, and optional
-result entity type. Query-plan validation rejects unsupported vocabulary, ambiguous anchors are
-reported rather than selected arbitrarily, and a valid traversal with no matches returns an empty
-list. Natural-language planning and CLI integration are separate concerns and are not part of the
-executor.
+`grach query` always uses the configured OpenAI-compatible model to produce an `ENTITY_SEARCH`,
+`TRAVERSE`, or `UNSUPPORTED` plan. Only the question leaves the local query process; `graph.json`
+does not. `TRAVERSE` plans use only relationships present in the graph, and each step names a
+relationship type, direction, and optional result entity type. Ambiguous anchors are reported
+rather than selected arbitrarily. Successful CLI output contains the validated plan and matching
+entities.
 
 `graph.html` is also derived. It embeds the graph and the packaged Cytoscape.js runtime so viewing
 architecture data requires neither a server nor an external network request. Filtering and visual

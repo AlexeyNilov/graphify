@@ -19,14 +19,77 @@ def _graph(path: Path) -> None:
     )
 
 
-def test_query_command_reads_local_graph(tmp_path: Path, capsys) -> None:
+def test_query_command_plans_and_executes_against_local_graph(
+    tmp_path: Path, capsys, monkeypatch
+) -> None:
     graph_path = tmp_path / "graph.json"
     _graph(graph_path)
 
-    exit_code = main(["query", "orders service", "--graph", str(graph_path)])
+    class FakePlanner:
+        def plan(self, question: str) -> dict[str, object]:
+            assert question == "find orders service"
+            return {
+                "operation": "ENTITY_SEARCH",
+                "selector": {"name": "Orders", "type": "Service"},
+            }
+
+    monkeypatch.setattr("grach.query_planner.OpenAIQueryPlanner", FakePlanner)
+
+    exit_code = main(["query", "find orders service", "--graph", str(graph_path)])
 
     assert exit_code == 0
-    assert "service:orders" in capsys.readouterr().out
+    output = json.loads(capsys.readouterr().out)
+    assert output["plan"]["operation"] == "ENTITY_SEARCH"
+    assert [entity["id"] for entity in output["entities"]] == ["service:orders"]
+
+
+def test_query_command_reports_ambiguous_anchor(tmp_path: Path, capsys, monkeypatch) -> None:
+    graph_path = tmp_path / "graph.json"
+    graph_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "entities": [
+                    {"id": "service:orders", "name": "Orders", "type": "Service"},
+                    {"id": "database:orders", "name": "Orders", "type": "Database"},
+                ],
+                "relationships": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakePlanner:
+        def plan(self, question: str) -> dict[str, object]:
+            return {"operation": "ENTITY_SEARCH", "selector": {"name": "Orders"}}
+
+    monkeypatch.setattr("grach.query_planner.OpenAIQueryPlanner", FakePlanner)
+
+    exit_code = main(["query", "find orders", "--graph", str(graph_path)])
+
+    assert exit_code == 2
+    error = capsys.readouterr().err
+    assert "ambiguous" in error
+    assert "database:orders" in error
+    assert "service:orders" in error
+
+
+def test_query_command_reports_planner_failure(tmp_path: Path, capsys, monkeypatch) -> None:
+    from grach.query_planner import QueryPlannerError
+
+    graph_path = tmp_path / "graph.json"
+    _graph(graph_path)
+
+    class FakePlanner:
+        def plan(self, question: str) -> dict[str, object]:
+            raise QueryPlannerError("provider returned invalid query-plan JSON")
+
+    monkeypatch.setattr("grach.query_planner.OpenAIQueryPlanner", FakePlanner)
+
+    exit_code = main(["query", "find orders", "--graph", str(graph_path)])
+
+    assert exit_code == 2
+    assert "invalid query-plan JSON" in capsys.readouterr().err
 
 
 def test_codex_install_creates_only_codex_skill(tmp_path: Path) -> None:
