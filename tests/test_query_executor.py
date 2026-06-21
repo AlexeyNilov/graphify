@@ -195,6 +195,28 @@ def test_incoming_traversal_returns_entities_that_use_named_database() -> None:
     ]
 
 
+def test_query_plan_validation_rejects_a_traversal_impossible_for_its_anchor_type() -> None:
+    plan = {
+        "operation": "TRAVERSE",
+        "anchor": {"name": "Orders Database", "type": "Database"},
+        "steps": [
+            {
+                "relationship": "OWNED_BY",
+                "direction": "incoming",
+                "result_type": "Team",
+            },
+            {
+                "relationship": "USES_DATABASE",
+                "direction": "incoming",
+                "result_type": "Service",
+            },
+        ],
+    }
+
+    with pytest.raises(InvalidQueryPlanError, match="cannot start from Database"):
+        validate_query_plan(plan)
+
+
 def test_multi_step_traversal_applies_steps_in_order() -> None:
     plan = {
         "operation": "TRAVERSE",
@@ -212,14 +234,15 @@ def test_multi_step_traversal_applies_steps_in_order() -> None:
     assert [entity["id"] for entity in execute_query_plan(_graph(), plan)] == ["team:commerce"]
 
 
-def test_traversal_respects_direction_and_returns_empty_for_no_edges() -> None:
+def test_traversal_rejects_a_direction_incompatible_with_the_anchor_type() -> None:
     plan = {
         "operation": "TRAVERSE",
         "anchor": {"name": "Orders Database", "type": "Database"},
         "steps": [{"relationship": "USES_DATABASE", "direction": "outgoing"}],
     }
 
-    assert execute_query_plan(_graph(), plan) == []
+    with pytest.raises(InvalidQueryPlanError, match="cannot start from Database"):
+        execute_query_plan(_graph(), plan)
 
 
 def test_traversal_returns_multiple_entities_in_stable_id_order() -> None:

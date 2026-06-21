@@ -34,9 +34,10 @@ grach inspect service:order-service
 grach view
 ```
 
-`grach query` sends the question, but not `graph.json`, to the configured OpenAI-compatible model.
-The model returns a typed query plan; Grach validates that plan and executes it deterministically
-against the local graph. Successful output contains both the plan and the matching entities:
+`grach query` plans the documented database-user question deterministically. Other questions are
+sent, without `graph.json`, to the configured OpenAI-compatible model. Grach validates the typed
+query plan and executes it deterministically against the local graph. Successful output contains
+both the plan and the matching entities:
 
 ```json
 {
@@ -57,6 +58,8 @@ against the local graph. Successful output contains both the plan and the matchi
 
 Relationship questions use typed, directional traversal. Unsupported questions, invalid plans,
 missing anchors, and ambiguous anchors fail explicitly instead of returning a guessed result.
+Semantically impossible traversal type chains receive one bounded planner correction attempt before
+failing explicitly.
 Explicit Mermaid edges labeled `owns` are extracted deterministically so ownership queries do not
 depend on the model reproducing those diagram edges.
 

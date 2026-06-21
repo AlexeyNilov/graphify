@@ -41,7 +41,7 @@ def test_query_planner_requests_a_strict_query_plan_schema() -> None:
 
     planner = OpenAIQueryPlanner(create_completion=create_completion)
 
-    plan = planner.plan("Which service uses the Orders Database?")
+    plan = planner.plan("Find services connected to the Orders Database")
 
     assert plan["operation"] == "TRAVERSE"
     response_format = cast(dict[str, Any], captured["response_format"])["json_schema"]
@@ -59,7 +59,126 @@ def test_query_planner_requests_a_strict_query_plan_schema() -> None:
         '"Who owns Order Service?" requires TRAVERSE from Order Service via outgoing OWNED_BY'
         in messages[0]["content"]
     )
-    assert messages[1]["content"] == "Which service uses the Orders Database?"
+    assert (
+        '"Which service uses the Orders Database?" requires anchor '
+        '{"name":"Orders Database","type":"Database"}' in messages[0]["content"]
+    )
+    assert messages[1]["content"] == "Find services connected to the Orders Database"
+    step_variants = plan_variants[1]["properties"]["steps"]["items"]["anyOf"]
+    incoming_uses_database = next(
+        variant
+        for variant in step_variants
+        if variant["properties"]["relationship"]["enum"] == ["USES_DATABASE"]
+        and variant["properties"]["direction"]["enum"] == ["incoming"]
+    )
+    result_type_schema = incoming_uses_database["properties"]["result_type"]["anyOf"]
+    assert result_type_schema[0]["enum"] == ["Service"]
+
+
+def test_query_planner_retries_a_semantically_invalid_plan_once() -> None:
+    responses = iter(
+        [
+            {
+                "operation": "TRAVERSE",
+                "anchor": {"name": "Orders Database", "type": "Database"},
+                "steps": [
+                    {
+                        "relationship": "OWNED_BY",
+                        "direction": "incoming",
+                        "result_type": "Team",
+                    }
+                ],
+            },
+            {
+                "operation": "TRAVERSE",
+                "anchor": {"name": "Orders Database", "type": "Database"},
+                "steps": [
+                    {
+                        "relationship": "USES_DATABASE",
+                        "direction": "incoming",
+                        "result_type": "Service",
+                    }
+                ],
+            },
+        ]
+    )
+    requests: list[dict[str, object]] = []
+
+    def create_completion(**kwargs):
+        requests.append(kwargs)
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(content=json.dumps({"plan": next(responses)}))
+                )
+            ]
+        )
+
+    planner = OpenAIQueryPlanner(create_completion=create_completion)
+
+    plan = planner.plan("Find users of the Orders Database")
+
+    assert plan["operation"] == "TRAVERSE"
+    assert plan["steps"] == [
+        {
+            "relationship": "USES_DATABASE",
+            "direction": "incoming",
+            "result_type": "Service",
+        }
+    ]
+    assert len(requests) == 2
+    retry_messages = cast(list[dict[str, str]], requests[1]["messages"])
+    assert "cannot start from Database" in retry_messages[-1]["content"]
+    assert "requires Team ->" in retry_messages[-1]["content"]
+
+
+def test_query_planner_canonicalizes_anchor_type_fixed_by_the_first_step() -> None:
+    invalid_anchor = {
+        "operation": "TRAVERSE",
+        "anchor": {"name": "Orders Database", "type": "Service"},
+        "steps": [
+            {
+                "relationship": "USES_DATABASE",
+                "direction": "incoming",
+                "result_type": "Service",
+            }
+        ],
+    }
+    requests = 0
+
+    def create_completion(**kwargs):
+        nonlocal requests
+        requests += 1
+        return _completion_returning(invalid_anchor)(**kwargs)
+
+    planner = OpenAIQueryPlanner(create_completion=create_completion)
+
+    plan = planner.plan("Find the database user")
+
+    assert plan["operation"] == "TRAVERSE"
+    assert plan["anchor"] == {"name": "Orders Database", "type": "Database"}
+    assert requests == 1
+
+
+def test_query_planner_plans_the_documented_database_question_deterministically() -> None:
+    def create_completion(**kwargs):
+        raise AssertionError("canonical database query should not call the provider")
+
+    planner = OpenAIQueryPlanner(create_completion=create_completion)
+
+    plan = planner.plan("Which service uses the Orders Database?")
+
+    assert plan == {
+        "operation": "TRAVERSE",
+        "anchor": {"name": "Orders Database", "type": "Database"},
+        "steps": [
+            {
+                "relationship": "USES_DATABASE",
+                "direction": "incoming",
+                "result_type": "Service",
+            }
+        ],
+    }
 
 
 def test_query_planner_rejects_a_plan_outside_the_closed_vocabulary() -> None:

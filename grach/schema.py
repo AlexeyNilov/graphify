@@ -46,6 +46,16 @@ _RELATIONSHIP_PAIRS: dict[RelationshipType, frozenset[tuple[EntityType, EntityTy
 }
 
 
+def relationship_type_pairs(
+    relationship_type: RelationshipType,
+) -> frozenset[tuple[EntityType, EntityType]]:
+    constrained_pairs = _RELATIONSHIP_PAIRS.get(relationship_type)
+    if constrained_pairs is not None:
+        return constrained_pairs
+    source_types, target_types = _RELATIONSHIP_ENDPOINTS[relationship_type]
+    return frozenset((source, target) for source in source_types for target in target_types)
+
+
 class Provenance(TypedDict):
     source_file: str
     source_location: str

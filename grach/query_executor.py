@@ -11,6 +11,7 @@ from grach.schema import (
     EntityType,
     Relationship,
     RelationshipType,
+    relationship_type_pairs,
 )
 
 TraversalDirection = Literal["incoming", "outgoing"]
@@ -55,6 +56,10 @@ class InvalidQueryPlanError(QueryPlanError):
     pass
 
 
+class InvalidTraversalSemanticsError(InvalidQueryPlanError):
+    pass
+
+
 class EntityNotFoundError(QueryPlanError):
     pass
 
@@ -84,6 +89,9 @@ def validate_query_plan(data: object) -> QueryPlan:
         _require_keys(data, {"operation", "anchor", "steps"}, "traverse plan")
         _validate_selector(data.get("anchor"), label="anchor")
         _validate_steps(data.get("steps"))
+        _validate_traversal_types(
+            cast(EntitySelector, data["anchor"]), cast(list[TraversalStep], data["steps"])
+        )
         return cast(TraversePlan, data)
     if operation == "UNSUPPORTED":
         _require_keys(data, {"operation", "reason"}, "unsupported plan")
@@ -150,6 +158,52 @@ def _validate_step(value: object, index: int) -> None:
         not isinstance(result_type, str) or result_type not in ENTITY_TYPES
     ):
         raise InvalidQueryPlanError(f"unsupported result entity type: {result_type!r}")
+
+
+def _validate_traversal_types(anchor: EntitySelector, steps: list[TraversalStep]) -> None:
+    anchor_type = anchor.get("type")
+    possible_types = set(ENTITY_TYPES if anchor_type is None else {anchor_type})
+    for index, step in enumerate(steps):
+        possible_types = _step_result_types(possible_types, step, index)
+
+
+def _step_result_types(
+    possible_types: set[EntityType], step: TraversalStep, index: int
+) -> set[EntityType]:
+    pairs = _directed_type_pairs(step)
+    result_type = step.get("result_type")
+    valid_pairs = {
+        pair
+        for pair in pairs
+        if pair[0] in possible_types and (result_type is None or pair[1] == result_type)
+    }
+    if valid_pairs:
+        return {output_type for _, output_type in valid_pairs}
+    inputs = ", ".join(sorted(possible_types))
+    output = "" if result_type is None else f" and produce {result_type}"
+    raise InvalidTraversalSemanticsError(
+        f"step {index} {step['relationship']} {step['direction']} cannot start from {inputs}{output}; "
+        f"requires {_describe_type_pairs(pairs)}"
+    )
+
+
+def _directed_type_pairs(
+    step: TraversalStep,
+) -> frozenset[tuple[EntityType, EntityType]]:
+    pairs = relationship_type_pairs(step["relationship"])
+    if step["direction"] == "incoming":
+        return frozenset((target, source) for source, target in pairs)
+    return pairs
+
+
+def _describe_type_pairs(pairs: frozenset[tuple[EntityType, EntityType]]) -> str:
+    outputs_by_input: dict[EntityType, set[EntityType]] = {}
+    for input_type, output_type in pairs:
+        outputs_by_input.setdefault(input_type, set()).add(output_type)
+    return " or ".join(
+        f"{input_type} -> {', '.join(sorted(output_types))}"
+        for input_type, output_types in sorted(outputs_by_input.items())
+    )
 
 
 def _require_keys(
