@@ -1,14 +1,21 @@
 # Relationship-aware natural-language querying plan
 
+## Status
+
+The deterministic typed query executor is implemented in `grach/query_executor.py`. It validates
+`ENTITY_SEARCH` and `TRAVERSE` plans, resolves anchors by ID, canonical name, or alias, and executes
+bounded directional traversal. Natural-language planning and `grach query` integration remain to be
+implemented.
+
 ## Goal
 
-Make `graphify query` answer bounded natural-language questions about relationships in the local
+Make `grach query` answer bounded natural-language questions about relationships in the local
 architecture graph while preserving deterministic graph traversal and the existing closed schema.
 
 For example:
 
 ```bash
-graphify query "Which service uses the Orders Database?"
+grach query "Which service uses the Orders Database?"
 ```
 
 The command should identify `Orders Database` as the anchor entity, traverse incoming
@@ -51,14 +58,14 @@ Introduce a typed, validated query plan. A plan for the motivating question woul
 }
 ```
 
-The plan vocabulary must be restricted to Graphify's supported entity and relationship types.
+The plan vocabulary must be restricted to Grach's supported entity and relationship types.
 Traversal direction must be explicit. Multiple steps allow bounded questions such as finding the
 team that owns the service that uses a particular database.
 
 An `ENTITY_SEARCH` operation should preserve existing searches such as:
 
 ```bash
-graphify query "orders database"
+grach query "orders database"
 ```
 
 ## Data flow
@@ -104,7 +111,7 @@ commands remain unchanged.
 
 ## Failure behavior
 
-Graphify must distinguish these outcomes instead of representing all of them as an empty list:
+Grach must distinguish these outcomes instead of representing all of them as an empty list:
 
 - The planner does not support the question.
 - The anchor entity cannot be resolved.
@@ -136,13 +143,13 @@ model or mock internal traversal logic.
 
 1. Add failing behavioral tests for direct, reverse, multi-step, alias, ambiguous, unsupported,
    empty-result, and entity-search queries.
-2. Add typed query-plan structures and strict boundary validation.
-3. Implement deterministic entity resolution and plan execution.
+2. Add typed query-plan structures and strict boundary validation. Completed.
+3. Implement deterministic entity resolution and plan execution. Completed.
 4. Add an injectable OpenAI-compatible planner that requests structured output.
-5. Integrate planning and execution into `graphify query`.
+5. Integrate planning and execution into `grach query`.
 6. Add actionable CLI error reporting and exit behavior.
 7. Update `README.md` and `ARCHITECTURE.md` with the new query data flow and scope boundary.
-8. Bump the minor project version to `1.2.0`.
+8. Bump the minor project version from `2.1.1` to `2.2.0`.
 9. Run `make format`, `make test`, `make lint`, and `make mypy`.
 
 ## Tradeoffs and deferred optimization
