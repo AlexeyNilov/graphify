@@ -130,6 +130,9 @@
     function checked(kind) {
       return new Set([...document.querySelectorAll(`input[data-kind="${kind}"]:checked`)].map(i => i.value));
     }
+    function displayed(collection) {
+      return collection.filter(element => !element.hasClass('hidden'));
+    }
     function selectPreset(name) {
       state.preset = name; state.focused = false;
       const allowed = new Set(presets[name]);
@@ -147,7 +150,7 @@
           && allowedEntities.has(edge.source().data('type')) && allowedEntities.has(edge.target().data('type'));
         edge.toggleClass('hidden', !visible);
       });
-      const connected = new Set(); cy.edges(':visible').forEach(e => { connected.add(e.source().id()); connected.add(e.target().id()); });
+      const connected = new Set(); displayed(cy.edges()).forEach(e => { connected.add(e.source().id()); connected.add(e.target().id()); });
       cy.nodes().forEach(node => node.toggleClass('hidden', !allowedEntities.has(node.data('type')) || !connected.has(node.id())));
       applySearch(); updateSummary();
       if (runLayout) cy.layout({ name: 'cose', animate: false, fit: true, padding: 45, nodeRepulsion: 9000 }).run();
@@ -155,12 +158,12 @@
     function applySearch() {
       const term = document.getElementById('search').value.trim().toLowerCase();
       cy.elements().removeClass('dim'); if (!term) return;
-      const matches = cy.nodes(':visible').filter(node => [node.id(), node.data('label'), ...(node.data('aliases') || [])]
+      const matches = displayed(cy.nodes()).filter(node => [node.id(), node.data('label'), ...(node.data('aliases') || [])]
         .some(value => String(value).toLowerCase().includes(term)));
-      cy.elements(':visible').addClass('dim'); matches.removeClass('dim'); matches.connectedEdges(':visible').removeClass('dim');
+      displayed(cy.elements()).addClass('dim'); matches.removeClass('dim'); displayed(matches.connectedEdges()).removeClass('dim');
     }
     function updateSummary() {
-      document.getElementById('summary').textContent = `${cy.nodes(':visible').length} entities · ${cy.edges(':visible').length} relationships`;
+      document.getElementById('summary').textContent = `${displayed(cy.nodes()).length} entities · ${displayed(cy.edges()).length} relationships`;
     }
     function renderDetails(node) {
       const data = node.data(); const panel = document.getElementById('details');
@@ -172,7 +175,7 @@
         const row = table.insertRow(); row.insertCell().textContent = key; row.insertCell().textContent = format(value);
       });
       panel.append(table, el('h2', '', 'Relationships'));
-      node.connectedEdges(':visible').forEach(edge => {
+      displayed(node.connectedEdges()).forEach(edge => {
         const direction = edge.source().id() === node.id() ? 'outgoing' : 'incoming';
         const other = direction === 'outgoing' ? edge.target() : edge.source();
         const item = el('div', 'relation', '');
@@ -189,11 +192,11 @@
     cy.on('tap', 'node', event => renderDetails(event.target));
     document.getElementById('search').addEventListener('input', applySearch);
     document.getElementById('confidence').addEventListener('input', applyFilters);
-    document.getElementById('fit').addEventListener('click', () => cy.fit(cy.elements(':visible'), 45));
+    document.getElementById('fit').addEventListener('click', () => cy.fit(displayed(cy.elements()), 45));
     document.getElementById('focus').addEventListener('click', () => {
       const selected = cy.$('node:selected'); if (!selected.length) return;
-      cy.elements(':visible').addClass('dim'); selected.removeClass('dim'); selected.neighborhood(':visible').removeClass('dim');
-      cy.fit(selected.closedNeighborhood(':visible'), 70); state.focused = true;
+      displayed(cy.elements()).addClass('dim'); selected.removeClass('dim'); displayed(selected.neighborhood()).removeClass('dim');
+      cy.fit(displayed(selected.closedNeighborhood()), 70); state.focused = true;
     });
     document.getElementById('reset').addEventListener('click', () => { document.getElementById('search').value = ''; selectPreset('Runtime'); });
     selectPreset('Runtime');
