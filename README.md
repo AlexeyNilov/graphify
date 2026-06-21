@@ -31,6 +31,15 @@ graphify affected database:orders
 graphify inspect service:order-service
 ```
 
+For a fast, easy-to-read extraction example, run:
+
+```bash
+graphify build examples/architecture-simple
+```
+
+The [Simple Order System](examples/architecture-simple/order-system.md) contains four entities and
+four explicit relationships.
+
 For a comprehensive extraction input containing every supported entity and relationship type, run:
 
 ```bash

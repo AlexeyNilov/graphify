@@ -4,6 +4,8 @@ import json
 from types import SimpleNamespace
 from typing import Any, cast
 
+import pytest
+
 from graphify.openai_client import OpenAIMarkdownExtractor
 
 
@@ -74,3 +76,61 @@ def test_openai_environment_configures_lm_studio(monkeypatch) -> None:
         "base_url": "http://127.0.0.1:1234/v1",
     }
     assert request["model"] == "google/gemma-4-12b-qat"
+
+
+def test_openai_extractor_repairs_endpoint_type_for_a_unique_entity_name() -> None:
+    response = {
+        "entities": [
+            {"name": "Order Service", "type": "Service", "aliases": []},
+            {"name": "Orders Database", "type": "Database", "aliases": []},
+        ],
+        "relationships": [
+            {
+                "source": "Order Service",
+                "source_type": "Database",
+                "type": "USES_DATABASE",
+                "target": "Orders Database",
+                "target_type": "Database",
+                "confidence": 1.0,
+            }
+        ],
+    }
+
+    extractor = OpenAIMarkdownExtractor(create_completion=_completion_returning(response))
+
+    result = extractor.extract("Order Service uses Orders Database.", "architecture.md")
+
+    relationship = cast(list[dict[str, object]], result["relationships"])[0]
+    assert relationship["source_type"] == "Service"
+
+
+def test_openai_extractor_does_not_guess_when_entity_name_has_multiple_types() -> None:
+    response = {
+        "entities": [
+            {"name": "Orders", "type": "Service", "aliases": []},
+            {"name": "Orders", "type": "Database", "aliases": []},
+        ],
+        "relationships": [
+            {
+                "source": "Orders",
+                "source_type": "Team",
+                "type": "USES_DATABASE",
+                "target": "Orders",
+                "target_type": "Database",
+                "confidence": 1.0,
+            }
+        ],
+    }
+    extractor = OpenAIMarkdownExtractor(create_completion=_completion_returning(response))
+
+    with pytest.raises(ValueError, match="relationship source"):
+        extractor.extract("Orders uses Orders.", "architecture.md")
+
+
+def _completion_returning(data: dict[str, object]):
+    def create_completion(**kwargs):
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(data)))]
+        )
+
+    return create_completion

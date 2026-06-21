@@ -5,6 +5,7 @@ import os
 from collections.abc import Callable
 from typing import Any, Protocol, cast
 
+from graphify.normalize import canonical_name
 from graphify.schema import ENTITY_TYPES, RELATIONSHIP_TYPES, validate_extraction
 
 
@@ -43,8 +44,27 @@ class OpenAIMarkdownExtractor:
         if not content:
             raise ValueError("OpenAI-compatible provider returned no message content")
         data = json.loads(content)
+        _repair_endpoint_types(data)
         validate_extraction(data)
         return data
+
+
+def _repair_endpoint_types(data: dict[str, Any]) -> None:
+    types_by_name: dict[str, set[str]] = {}
+    for entity in data.get("entities", []):
+        if not isinstance(entity, dict) or entity.get("type") not in ENTITY_TYPES:
+            continue
+        names = [entity.get("name"), *entity.get("aliases", [])]
+        for name in names:
+            if isinstance(name, str):
+                types_by_name.setdefault(canonical_name(name), set()).add(entity["type"])
+    for relationship in data.get("relationships", []):
+        if not isinstance(relationship, dict):
+            continue
+        for endpoint in ("source", "target"):
+            types = types_by_name.get(canonical_name(str(relationship.get(endpoint, ""))), set())
+            if len(types) == 1 and relationship.get(f"{endpoint}_type") not in types:
+                relationship[f"{endpoint}_type"] = next(iter(types))
 
 
 def _instructions() -> str:
