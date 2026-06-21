@@ -31,6 +31,16 @@ graphify affected database:orders
 graphify inspect service:order-service
 ```
 
+For a comprehensive extraction input containing every supported entity and relationship type, run:
+
+```bash
+graphify build examples/architecture
+```
+
+The fictional [Atlas Commerce Platform](examples/architecture/complex-commerce-platform.md)
+includes aliases, synchronous calls, event flows, deployment topology, ownership, and operational
+dependencies.
+
 Install the project-local Codex skill with:
 
 ```bash
