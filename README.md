@@ -22,6 +22,12 @@ These settings point Grach at LM Studio's OpenAI-compatible API. Start the local
 load the configured model before building a graph. When `OPENAI_BASE_URL` and `OPENAI_MODEL` are
 unset, the OpenAI SDK endpoint and `gpt-4.1-mini` are used.
 
+Install the project-local Codex skill with:
+
+```bash
+grach codex install
+```
+
 ## Use
 
 ```bash
@@ -79,20 +85,6 @@ The [Simple Order System](examples/architecture-simple/order-system.md) contains
 four explicit relationships.
 
 For a comprehensive extraction input containing every supported entity and relationship type, run:
-
-```bash
-grach build examples/architecture
-```
-
-The fictional [Atlas Commerce Platform](examples/architecture/complex-commerce-platform.md)
-includes aliases, synchronous calls, event flows, deployment topology, ownership, and operational
-dependencies.
-
-Install the project-local Codex skill with:
-
-```bash
-grach codex install
-```
 
 ## Development
 
