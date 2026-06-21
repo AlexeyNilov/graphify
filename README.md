@@ -12,10 +12,14 @@ analysis, multiple LLM providers, graph databases, vector search, or non-Codex i
 
 ```bash
 python -m pip install -e ".[dev]"
-export OPENAI_API_KEY="..."
+export OPENAI_API_KEY="key"
+export OPENAI_BASE_URL="http://127.0.0.1:1234/v1"
+export OPENAI_MODEL="google/gemma-4-12b-qat"
 ```
 
-`GRAPHIFY_OPENAI_MODEL` optionally overrides the default `gpt-4.1-mini` model.
+These settings point Graphify at LM Studio's OpenAI-compatible API. Start the local server and
+load the configured model before building a graph. When `OPENAI_BASE_URL` and `OPENAI_MODEL` are
+unset, the OpenAI SDK endpoint and `gpt-4.1-mini` are used.
 
 ## Use
 

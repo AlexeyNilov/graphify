@@ -1,7 +1,9 @@
 # Security
 
-Markdown contents are sent to OpenAI when `graphify build` runs. Do not include credentials,
-secrets, personal data, or documents that your OpenAI data policy does not permit.
+Markdown contents are sent to the provider configured by `OPENAI_BASE_URL` when `graphify build`
+runs. With a loopback LM Studio URL they remain on the local machine; with a remote URL they leave
+the machine. Do not include credentials, secrets, or documents the configured provider is not
+permitted to receive.
 
 OpenAPI files are parsed locally. YAML uses `yaml.safe_load`; arbitrary YAML object construction is
 not enabled.

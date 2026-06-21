@@ -3,4 +3,4 @@
 from graphify.pipeline import build_architecture_graph
 
 __all__ = ["build_architecture_graph"]
-__version__ = "1.0.0"
+__version__ = "1.0.1"

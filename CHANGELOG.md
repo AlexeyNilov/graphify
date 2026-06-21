@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+
+- Added explicit `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `OPENAI_MODEL` support.
+- Switched structured Markdown extraction to the LM Studio-compatible Chat Completions endpoint.
+
 ## 1.0.0
 
 - Replaced general code analysis with a corporate architecture graph pipeline.

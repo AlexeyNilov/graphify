@@ -12,32 +12,37 @@ class MarkdownExtractor(Protocol):
     def extract(self, text: str, source: str) -> dict[str, object]: ...
 
 
-class ResponseOutput(Protocol):
-    output_text: str
-
-
 class OpenAIMarkdownExtractor:
     def __init__(
         self,
         model: str | None = None,
         *,
-        create_response: Callable[..., ResponseOutput] | None = None,
+        create_completion: Callable[..., Any] | None = None,
     ) -> None:
-        if create_response is None:
+        if create_completion is None:
             from openai import OpenAI
 
-            create_response = cast(Callable[..., ResponseOutput], OpenAI().responses.create)
-        self._create_response = create_response
-        self._model = model or os.environ.get("GRAPHIFY_OPENAI_MODEL", "gpt-4.1-mini")
+            client = OpenAI(
+                api_key=os.environ.get("OPENAI_API_KEY"),
+                base_url=os.environ.get("OPENAI_BASE_URL"),
+            )
+            create_completion = cast(Callable[..., Any], client.chat.completions.create)
+        self._create_completion = create_completion
+        self._model = model or os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 
     def extract(self, text: str, source: str) -> dict[str, object]:
-        response = self._create_response(
+        response = self._create_completion(
             model=self._model,
-            instructions=_instructions(),
-            input=f"Source: {source}\n\n{text}",
-            text={"format": _response_format()},
+            messages=[
+                {"role": "system", "content": _instructions()},
+                {"role": "user", "content": f"Source: {source}\n\n{text}"},
+            ],
+            response_format=_response_format(),
         )
-        data = json.loads(response.output_text)
+        content = response.choices[0].message.content
+        if not content:
+            raise ValueError("OpenAI-compatible provider returned no message content")
+        data = json.loads(content)
         validate_extraction(data)
         return data
 
@@ -90,7 +95,9 @@ def _response_format() -> dict[str, Any]:
     }
     return {
         "type": "json_schema",
-        "name": "architecture_extraction",
-        "strict": True,
-        "schema": schema,
+        "json_schema": {
+            "name": "architecture_extraction",
+            "strict": True,
+            "schema": schema,
+        },
     }
