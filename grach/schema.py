@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Literal, TypedDict
 
+from grach.normalize import canonical_name
+
 EntityType = Literal[
     "Service", "Database", "API", "Endpoint", "Event", "Team", "Document", "Infrastructure"
 ]
@@ -81,8 +83,10 @@ def validate_extraction(data: dict[str, Any]) -> None:
             raise ValueError(f"unsupported entity type: {entity!r}")
         if not isinstance(entity.get("name"), str) or not entity["name"].strip():
             raise ValueError("every entity requires a non-empty name")
-        references.add((entity["name"], entity["type"]))
-        references.update((alias, entity["type"]) for alias in entity.get("aliases", []))
+        references.add((canonical_name(entity["name"]), entity["type"]))
+        references.update(
+            (canonical_name(alias), entity["type"]) for alias in entity.get("aliases", [])
+        )
     for relationship in relationships:
         if not isinstance(relationship, dict) or relationship.get("type") not in RELATIONSHIP_TYPES:
             raise ValueError(f"unsupported relationship type: {relationship!r}")
@@ -92,9 +96,11 @@ def validate_extraction(data: dict[str, Any]) -> None:
             raise ValueError("every relationship requires a supported source_type")
         if relationship.get("target_type") not in ENTITY_TYPES:
             raise ValueError("every relationship requires a supported target_type")
-        if (relationship["source"], relationship["source_type"]) not in references:
+        source_reference = (canonical_name(relationship["source"]), relationship["source_type"])
+        target_reference = (canonical_name(relationship["target"]), relationship["target_type"])
+        if source_reference not in references:
             raise ValueError("relationship source must reference an extracted entity")
-        if (relationship["target"], relationship["target_type"]) not in references:
+        if target_reference not in references:
             raise ValueError("relationship target must reference an extracted entity")
         confidence = relationship.get("confidence")
         if not isinstance(confidence, int | float) or not 0 <= confidence <= 1:

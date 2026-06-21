@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
-from grach.schema import EntityType
+if TYPE_CHECKING:
+    from grach.schema import EntityType
 
 _CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 _NON_WORD = re.compile(r"[^a-z0-9]+")
