@@ -49,7 +49,7 @@ _RELATIONSHIP_PAIRS: dict[RelationshipType, frozenset[tuple[EntityType, EntityTy
 class Provenance(TypedDict):
     source_file: str
     source_location: str
-    method: Literal["openapi", "openai"]
+    method: Literal["openapi", "openai", "mermaid"]
 
 
 class Entity(TypedDict, total=False):

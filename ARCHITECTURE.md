@@ -3,7 +3,7 @@
 Grach has one pipeline:
 
 ```text
-discover -> extract -> validate -> normalize -> merge -> graph.json -> query/view
+discover -> extract -> validate -> enrich -> normalize -> merge -> graph.json -> query/view
 ```
 
 ## Responsibilities
@@ -13,6 +13,7 @@ discover -> extract -> validate -> normalize -> merge -> graph.json -> query/vie
 | `schema.py` | Closed entity and relationship vocabulary plus boundary validation |
 | `openapi.py` | Deterministic OpenAPI 3.x extraction |
 | `openai_client.py` | OpenAI-compatible Markdown extraction, including local LM Studio |
+| `markdown.py` | Deterministic enrichment of explicit Mermaid relationships |
 | `normalize.py` | Stable canonical names and typed IDs |
 | `pipeline.py` | Discovery, extraction orchestration, normalization, and merge |
 | `query.py` | Directed paths and reverse impact |
@@ -25,6 +26,11 @@ OpenAPI relationships have confidence `1.0`. Markdown relationships receive conf
 model and are labeled with extraction method `openai`. The adapter uses Chat Completions with a
 strict JSON schema so LM Studio and OpenAI share one extraction path. Both paths retain source
 provenance.
+
+After model extraction validates, explicit Mermaid edges labeled `owns` are resolved through the
+extracted entities and added as canonical `OWNED_BY` relationships. These deterministic facts have
+confidence `1.0` and extraction method `mermaid`. Existing model-extracted ownership edges are not
+duplicated.
 
 When a Markdown extraction violates graph validation, the adapter makes one corrective request
 with the rejected JSON and validation error. A second invalid result fails the build rather than

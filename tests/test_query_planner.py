@@ -55,6 +55,10 @@ def test_query_planner_requests_a_strict_query_plan_schema() -> None:
         "UNSUPPORTED",
     ]
     assert "USES_DATABASE uses Service -> Database" in messages[0]["content"]
+    assert (
+        '"Who owns Order Service?" requires TRAVERSE from Order Service via outgoing OWNED_BY'
+        in messages[0]["content"]
+    )
     assert messages[1]["content"] == "Which service uses the Orders Database?"
 
 

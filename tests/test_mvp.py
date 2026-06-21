@@ -151,3 +151,44 @@ paths:
         "api:catalog-api",
         "endpoint:list-items",
     }
+
+
+def test_mermaid_owns_edges_restore_ownership_omitted_by_model(tmp_path: Path) -> None:
+    class OwnershipOmittingExtractor:
+        def extract(self, text: str, source: str) -> dict[str, object]:
+            return {
+                "entities": [
+                    {"name": "Web Store", "type": "Service"},
+                    {"name": "Order Service", "type": "Service"},
+                    {"name": "Commerce Team", "type": "Team"},
+                ],
+                "relationships": [],
+            }
+
+    (tmp_path / "architecture.md").write_text(
+        """```mermaid
+flowchart LR
+    Web[Web Store] --> Orders[Order Service]
+    Team[Commerce Team] -. owns .-> Web
+    Team -. owns .-> Orders
+```
+""",
+        encoding="utf-8",
+    )
+
+    graph = build_architecture_graph(tmp_path, markdown_extractor=OwnershipOmittingExtractor())
+
+    ownership = {
+        (relationship["source"], relationship["target"])
+        for relationship in graph["relationships"]
+        if relationship["type"] == "OWNED_BY"
+    }
+    assert ownership == {
+        ("service:order-service", "team:commerce-team"),
+        ("service:web-store", "team:commerce-team"),
+    }
+    assert {
+        relationship["provenance"]["method"]
+        for relationship in graph["relationships"]
+        if relationship["type"] == "OWNED_BY"
+    } == {"mermaid"}

@@ -104,6 +104,7 @@ def _instructions() -> str:
         "to 1. Entity endpoint types must match the referenced entities. "
         f"Allowed entity types: {entities}. Allowed relationship types: {relationships}. "
         "Relationship direction is semantic: OWNED_BY uses owned entity -> Team; "
+        '"The Commerce Team owns both services" requires one OWNED_BY relationship per service; '
         "USES_DATABASE uses Service -> Database; PUBLISHES and CONSUMES use Service -> Event; "
         "DEPLOYED_TO uses Service -> Infrastructure; EXPOSES uses Service -> API or API -> "
         "Endpoint; GENERATES uses Service -> Document; RECEIVES uses API -> Endpoint. "

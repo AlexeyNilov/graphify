@@ -70,7 +70,8 @@ def _instructions() -> str:
         "ordered relationship steps for relationship questions. Use UNSUPPORTED with a concise "
         "reason when the question cannot be expressed with the allowed graph vocabulary. Selectors "
         "use exactly one of id or name and may include type. Never answer the question or invent "
-        "graph facts. "
+        'graph facts. "Who owns Order Service?" requires TRAVERSE from Order Service via outgoing '
+        "OWNED_BY with Team as the result type. "
         f"Allowed entity types: {entities}. Allowed relationships: {relationships}. "
         "Relationship direction is semantic: USES_DATABASE uses Service -> Database; OWNED_BY uses "
         "owned entity -> Team; CALLS uses caller -> callee; PUBLISHES and CONSUMES use Service -> "

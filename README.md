@@ -41,15 +41,24 @@ against the local graph. Successful output contains both the plan and the matchi
 ```json
 {
   "plan": {
-    "operation": "ENTITY_SEARCH",
-    "selector": {"name": "Order Service", "type": "Service"}
+    "operation": "TRAVERSE",
+    "anchor": {"name": "Order Service", "type": "Service"},
+    "steps": [
+      {
+        "relationship": "OWNED_BY",
+        "direction": "outgoing",
+        "result_type": "Team"
+      }
+    ]
   },
-  "entities": [{"id": "service:order-service", "name": "Order Service", "type": "Service"}]
+  "entities": [{"id": "team:commerce-team", "name": "Commerce Team", "type": "Team"}]
 }
 ```
 
 Relationship questions use typed, directional traversal. Unsupported questions, invalid plans,
 missing anchors, and ambiguous anchors fail explicitly instead of returning a guessed result.
+Explicit Mermaid edges labeled `owns` are extracted deterministically so ownership queries do not
+depend on the model reproducing those diagram edges.
 
 `grach view` writes `grach-out/graph.html`, a self-contained interactive viewer that works
 offline. Its presets separate runtime dependencies, event flows, ownership, deployment, and API

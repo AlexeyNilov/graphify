@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from grach.markdown import add_mermaid_ownership
 from grach.normalize import canonical_name, entity_id
 from grach.openapi import extract_openapi, load_openapi
 from grach.openai_client import MarkdownExtractor, OpenAIMarkdownExtractor
@@ -24,7 +25,10 @@ def build_architecture_graph(
         relative = path.relative_to(root).as_posix()
         if path.suffix.lower() == ".md":
             extractor = extractor or OpenAIMarkdownExtractor()
-            data = extractor.extract(path.read_text(encoding="utf-8"), relative)
+            text = path.read_text(encoding="utf-8")
+            data = extractor.extract(text, relative)
+            validate_extraction(data)
+            add_mermaid_ownership(data, text, relative)
             validate_extraction(data)
             extractions.append((data, relative, "openai"))
             continue
@@ -123,6 +127,8 @@ def _provenance(raw: object, source_file: str, method: str) -> Provenance:
         location = "document"
     if method == "openapi":
         return {"source_file": source_file, "source_location": location, "method": "openapi"}
+    if method == "mermaid":
+        return {"source_file": source_file, "source_location": location, "method": "mermaid"}
     return {"source_file": source_file, "source_location": location, "method": "openai"}
 
 
