@@ -13,16 +13,16 @@ RUFF = $(VENV_BIN)/ruff$(EXE)
 MYPY = $(VENV_BIN)/mypy$(EXE)
 
 install:
-	$(PIP) install -e .[dev]
+	$(PIP) install -e ".[dev]"
 
 test:
 	$(PYTEST)
+
+format:
+	$(RUFF) format .
 
 lint:
 	$(RUFF) check .
 
 mypy:
-	$(MYPY) src tests
-
-format:
-	$(RUFF) format --check .
+	$(MYPY)
