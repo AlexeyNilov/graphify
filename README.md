@@ -88,11 +88,5 @@ make lint
 make mypy
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the data flow and [docs/plan.md](docs/plan.md) for the
-scope boundary.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the data flow .
 
-## Migrating from 1.x
-
-Version 2.0 renamed the `graphifyy` distribution, `graphify` Python package and command, default
-`graphify-out` directory, and Codex skill to `grach`. There are no compatibility aliases; reinstall
-the package and replace those names in scripts and imports.
