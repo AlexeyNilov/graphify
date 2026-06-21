@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, get_args
 
 from grach.normalize import canonical_name
 
@@ -21,24 +21,8 @@ RelationshipType = Literal[
     "RECEIVES",
 ]
 
-ENTITY_TYPES = frozenset(
-    {"Service", "Database", "API", "Endpoint", "Event", "Team", "Document", "Infrastructure"}
-)
-RELATIONSHIP_TYPES = frozenset(
-    {
-        "CALLS",
-        "USES_DATABASE",
-        "PUBLISHES",
-        "CONSUMES",
-        "DEPLOYED_TO",
-        "OWNED_BY",
-        "DESCRIBED_IN",
-        "DEPENDS_ON",
-        "EXPOSES",
-        "GENERATES",
-        "RECEIVES",
-    }
-)
+ENTITY_TYPES: frozenset[EntityType] = frozenset(get_args(EntityType))
+RELATIONSHIP_TYPES: frozenset[RelationshipType] = frozenset(get_args(RelationshipType))
 
 
 class Provenance(TypedDict):
