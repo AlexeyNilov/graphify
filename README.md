@@ -82,21 +82,6 @@ Install the project-local Codex skill with:
 grach codex install
 ```
 
-## Graph schema
-
-Entity types are `Service`, `Database`, `API`, `Endpoint`, `Event`, `Team`, `Document`, and
-`Infrastructure`.
-
-Relationship types are `CALLS`, `USES_DATABASE`, `PUBLISHES`, `CONSUMES`, `DEPLOYED_TO`,
-`OWNED_BY`, `DESCRIBED_IN`, `DEPENDS_ON`, `EXPOSES`, `GENERATES`, and `RECEIVES`.
-
-Every relationship records numeric confidence and provenance containing its source file,
-source location, and extraction method. IDs are stable, typed slugs such as
-`service:order-service`.
-
-Relationship direction is semantic and validated during extraction. For example, `OWNED_BY` runs
-from the owned entity to its `Team`, while `USES_DATABASE` runs from a `Service` to a `Database`.
-
 ## Development
 
 ```bash
@@ -106,4 +91,5 @@ make lint
 make mypy
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the data flow .
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the data flow and [grach/schema.py](grach/schema.py)
+for the authoritative graph schema.
