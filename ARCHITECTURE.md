@@ -24,6 +24,10 @@ model and are labeled with extraction method `openai`. The adapter uses Chat Com
 strict JSON schema so LM Studio and OpenAI share one extraction path. Both paths retain source
 provenance.
 
+When a Markdown extraction violates graph validation, the adapter makes one corrective request
+with the rejected JSON and validation error. A second invalid result fails the build rather than
+weakening relationship constraints or silently dropping data.
+
 `graph.json` is a derived local artifact. There is no graph database or vector index in the first
 simplified release.
 

@@ -128,6 +128,57 @@ def test_openai_extractor_does_not_guess_when_entity_name_has_multiple_types() -
         extractor.extract("Orders uses Orders.", "architecture.md")
 
 
+def test_openai_extractor_retries_invalid_relationship_endpoints_with_feedback() -> None:
+    invalid = {
+        "entities": [
+            {"name": "Order Service", "type": "Service", "aliases": []},
+            {"name": "Fulfillment Service", "type": "Service", "aliases": []},
+            {"name": "Order Submitted", "type": "Event", "aliases": []},
+        ],
+        "relationships": [
+            {
+                "source": "Order Service",
+                "source_type": "Service",
+                "type": "PUBLISHES",
+                "target": "Fulfillment Service",
+                "target_type": "Service",
+                "confidence": 1.0,
+            }
+        ],
+    }
+    corrected = {
+        **invalid,
+        "relationships": [
+            {
+                "source": "Order Service",
+                "source_type": "Service",
+                "type": "PUBLISHES",
+                "target": "Order Submitted",
+                "target_type": "Event",
+                "confidence": 1.0,
+            }
+        ],
+    }
+    responses = iter((invalid, corrected))
+    requests: list[dict[str, object]] = []
+
+    def create_completion(**kwargs):
+        requests.append(kwargs)
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(next(responses))))]
+        )
+
+    result = OpenAIMarkdownExtractor(create_completion=create_completion).extract(
+        "Order Service publishes Order Submitted.", "architecture.md"
+    )
+
+    assert result["relationships"] == corrected["relationships"]
+    assert len(requests) == 2
+    retry_messages = cast(list[dict[str, str]], requests[1]["messages"])
+    assert retry_messages[-2]["content"] == json.dumps(invalid)
+    assert "PUBLISHES requires Service -> Event" in retry_messages[-1]["content"]
+
+
 def _completion_returning(data: dict[str, object]):
     def create_completion(**kwargs):
         return SimpleNamespace(

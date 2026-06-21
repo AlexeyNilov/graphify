@@ -28,7 +28,7 @@ unset, the OpenAI SDK endpoint and `gpt-4.1-mini` are used.
 grach build ./architecture
 grach query "orders database"
 grach path api:orders-api endpoint:create-order
-grach affected database:orders
+grach affected database:orders-database
 grach inspect service:order-service
 grach view
 ```

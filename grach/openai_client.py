@@ -32,21 +32,48 @@ class OpenAIMarkdownExtractor:
         self._model = model or os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 
     def extract(self, text: str, source: str) -> dict[str, object]:
+        messages = [
+            {"role": "system", "content": _instructions()},
+            {"role": "user", "content": f"Source: {source}\n\n{text}"},
+        ]
+        for attempt in range(2):
+            content = self._completion_content(messages)
+            data = json.loads(content)
+            _repair_endpoint_types(data)
+            try:
+                validate_extraction(data)
+            except ValueError as error:
+                if attempt == 1:
+                    raise
+                messages.extend(_correction_messages(content, error))
+                continue
+            return data
+        raise AssertionError("extraction retry loop ended unexpectedly")
+
+    def _completion_content(self, messages: list[dict[str, str]]) -> str:
         response = self._create_completion(
             model=self._model,
-            messages=[
-                {"role": "system", "content": _instructions()},
-                {"role": "user", "content": f"Source: {source}\n\n{text}"},
-            ],
+            messages=messages,
             response_format=_response_format(),
         )
         content = response.choices[0].message.content
         if not content:
             raise ValueError("OpenAI-compatible provider returned no message content")
-        data = json.loads(content)
-        _repair_endpoint_types(data)
-        validate_extraction(data)
-        return data
+        return content
+
+
+def _correction_messages(content: str, error: ValueError) -> list[dict[str, str]]:
+    return [
+        {"role": "assistant", "content": content},
+        {
+            "role": "user",
+            "content": (
+                f"The JSON failed architecture validation: {error}. "
+                "Return the complete corrected extraction. Preserve valid facts and do not "
+                "invent entities or relationships."
+            ),
+        },
+    ]
 
 
 def _repair_endpoint_types(data: dict[str, Any]) -> None:
